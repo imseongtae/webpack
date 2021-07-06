@@ -189,7 +189,7 @@ $ yarn add -D url-loader
 웹팩에서 알아야 할 마지막 기본 개념이 플러그인. 로더가 파일 단위로 처리하는 반면 플러그인은 번들된 결과물을 처리. 번들된 자바스크립트를 난독화 한다거나 특정 텍스트를 추출하는 용도로 사용
 
 
-### 6.1 BannerPlugin
+### 1. BannerPlugin
 결과물에 빌드 정보나 커밋 버전같은 걸 추가할 수 있다.
 
 webpack.config.js
@@ -205,7 +205,7 @@ module.exports = {
   ]
 ```
 
-### 6.1 DefinePlugin
+### 2. DefinePlugin
 어플리케이션은 개발환경과 운영환경으로 나눠서 운영한다. 가령 환경에 따라 API 서버 주소가 다를 수 있다. 같은 소스 코드를 두 환경에 배포하기 위해서는 이러한 환경 의존적인 정보를 소스가 아닌 곳에서 관리하는 것이 좋다. 배포할 때마다 코드를 수정하는 것은 곤란하기 때문이다.
 
 웹팩은 이러한 환경 정보를 제공하기 위해 DefinePlugin을 제공한다.
@@ -225,4 +225,82 @@ module.exports = {
       "api.domain": JSON.stringify("http://dev.api.domain.com"),
     })
   ]
+}
 ```
+
+### 3. HtmlWebpackPlugin
+HtmlWebpackPlugin은 HTML 파일을 후처리하는데 사용한다. 빌드 타임의 값을 넣거나 코드를 압축할수 있다.
+
+```bash
+yarn add -D html-webpack-plugin
+```
+
+이 플러그인으로 빌드하면 HTML파일로 아웃풋에 생성될 것이다. index.html 파일을 src/index.html로 옮긴뒤 다음과 같이 작성해 보자.
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>타이틀<%= env %></title>
+  </head>
+  <body>
+    <!-- 로딩 스크립트 제거 -->
+    <!-- <script src="dist/main.js"></script> -->
+  </body>
+</html>
+```
+
+
+정적파일을 배포하면 즉각 브라우져에 반영되지 않는 경우가 있다. 브라우져 캐쉬가 원인일 경우가 있는데 이를 위한 예방 옵션도 있다.
+`hash: true` 옵션을 추가하면 빌드할 시 생성하는 해쉬값을 정적파일 로딩 주소의 쿼리 문자열로 붙여서 HTML을 생성한다.
+
+```js
+new HtmlWebpackPlugin({
+  hash: true, // 정적 파일을 불러올때 쿼리문자열에 웹팩 해쉬값을 추가한다
+})
+```
+
+### 4. CleanWebpackPlugin
+CleanWebpackPlugin은 빌드 이전 결과물을 제거하는 플러그인이다. 빌드 결과물은 아웃풋 경로에 모이는데 과거 파일이 남아 있을수 있다. 이전 빌드내용이 덮여 씌여지면 상관없지만 그렇지 않으면 아웃풋 폴더에 여전히 남아 있을 수 있다.
+
+
+패키지를 설치하고, 웹팩 설정을 추가한다.
+
+```
+$ yarn add -D clean-webpack-plugin
+```
+
+빌드 결과 아웃풋 폴더인 dist 폴더가 모두 삭제된후 결과물이 생성 된다.
+
+```js
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+
+module.exports = {
+  plugins: [new CleanWebpackPlugin()],
+}
+```
+
+
+
+### Development Server
+인터넷에 웹사이트를 게시하려면 서버 프로그램으로 파일을 읽고 요청한 클라이언트에게 제공해야 한다.
+
+개발환경에서도 이와 유사한 환경을 갖추는 것이 좋다. 운영환경과 맞춤으로써 배포시 잠재적 문제를 미리 확인할 수 있다. 게다가 ajax 방식의 api 연동은 cors 정책 때문에 반드시 서버가 필요하다.
+
+webpack-dev-server 패키지 설치
+
+```bash
+$ yarn add -D webpack-dev-server
+```
+
+
+```json
+// f you're using webpack-cli 4 or webpack 5, change webpack-dev-server to webpack serve.
+"scripts": {  
+  "dev": "webpack serve"
+},
+```
+
+
+## 참조
+- [프론트엔드 개발환경의 이해: 웹팩(기본)](https://jeonghwan-kim.github.io/series/2019/12/10/frontend-dev-env-webpack-basic.html#64-cleanwebpackplugin)
