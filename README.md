@@ -1,8 +1,4 @@
 # Webpack
-- 여러 파일을 하나로 합치고, 요청을 한 번만 보내기 때문에 네트워크의 `requests`를 줄이는 효과가 있다.
-- 브라우저를 위한 사전 컴파일러
-- 웹 페이지를 구성하는 모든 자원과 관련된 도구이다
-
 
 ## Table of Contents 
 1. [What is the Webpack?](#what-is-the-webpack?)
@@ -14,11 +10,12 @@
 ## What is the Webpack?
 웹팩은 여러개 파일을 하나의 파일로 합쳐주는 번들러(bundler)다. 하나의 시작점(entry point)으로부터 의존적인 모듈을 전부 찾아내서 하나의 결과물을 만들어 낸다. app.js부터 시작해 math.js 파일을 찾은 뒤 하나의 파일로 만드는 방식이다.
 
-- 웹 개발 후 압축해야함
-- Linter를 통해 에러 없는 방향으로 작성
-- 모든 브라우저에 호환가능한 js형태로 변환
-- CSS 최적화
-- img 최적화
+- 여러 파일을 하나로 합치고, 요청을 한 번만 보내기 때문에 네트워크의 `requests`를 줄이는 효과가 있다.
+- 브라우저를 위한 사전 컴파일러(모든 브라우저에 호환가능한 js형태로 변환)
+- 웹 페이지를 구성하는 모든 자원과 관련된 도구이다
+  - CSS 최적화
+  - img 최적화
+
 
 ## entry/output
 번들 작업을 하는 `webpack` 패키지와 웹팩 터미널 도구인 `webpack-cli` 설치
@@ -113,43 +110,119 @@ Entrypoint main = bundle.js # 제일 중요! 모듈의 해석 순서
 exports.push([module.i, "p {\r\n  color: blue;\r\n}", ""]);
 ```
 
-### 커스텀 로더 만들기
+## 자주 사용하는 로더
+
+### css-loader
+웹팩은 모든것을 모듈로 바라보기 때문에 자바스크립트 뿐만 아니라 스타일시트로 import 구문으로 불러 올수 있다.
 
 
-## 웹팩 이전 버전과의 차이점
-웹팩 4버전으로 바뀌면서 `mode`설정을 통해 웹팩3 버전의 설정을 개선하게 되었다. 간단한 속성으로 설정을 제어할 수 있음
+```js
+// app.js
+import "./style.css"
+```
 
-### 웹팩4 버전의 mode 설정
+CSS 파일을 자바스크립트에서 불러와 사용하려면 CSS를 모듈로 변환하는 작업이 필요하다. css-loader가 그러한 역할을 하는데 우리 코드에서 CSS 파일을 모듈처럼 불러와 사용할 수 있게끔 해준다.
 
-```javascript
+```bash
+yarn add -D css-loader
+```
+
+**웹팩 설정에 로더를 추가**  
+웹팩은 엔트리 포인트부터 시작해서 모듈을 검색하다가 CSS 파일을 찾으면 css-loader로 처리할 것이다. use.loader에 로더 경로를 설정하는 대신 배열에 로더 이름을 문자열로 전달해도 된다.
+
+```js
 module.exports = {
-  mode: 'production', // 웹팩4에서 나온 기능으로 편의성을 개선
+  module: {
+    rules: [
+      {
+        test: /\.css$/, // .css 확장자로 끝나는 모든 파일
+        use: ["css-loader"], // css-loader를 적용한다
+      },
+    ],
+  },
 }
 ```
 
-### 웹팩3 버전의 mode 설정
+### style-loader
+모듈로 변경된 스타일 시트는 돔에 추가되어야만 브라우져가 해석할 수 있다. css-loader로 처리하면 자바스크립트 코드로만 변경되었을 뿐 돔에 적용되지 않았기 때문에 스트일이 적용되지 않았다.
 
-```javascript
-// 아래의 코드는 웹팩 버전 3까지의 코드!
-if (process.env.NODE_ENV === 'production') {
-  module.exports.devtool = '#source-map'
-  // http://vue-loader.vuejs.org/en/workflow/production.html
-  module.exports.plugins = (module.exports.plugins || []).concat([
-    new webpack.DefinePlugin({
-      'process.env': {
-        NODE_ENV: '"production"'
-      }
-    }),
-    new webpack.optimize.UglifyJsPlugin({
-      sourceMap: true,
-      compress: {
-        warnings: false
-      }
-    }),
-    new webpack.LoaderOptionsPlugin({
-      minimize: true
+style-loader는 자바스크립트로 변경된 스타일을 동적으로 돔에 추가하는 로더이다. CSS를 번들링하기 위해서는 css-loader와 style-loader를 함께 사용한다.
+
+```bash
+$ yarn add -D style-loader
+```
+
+`webpack.config.js`
+
+```js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ["style-loader", "css-loader"], // style-loader를 앞에 추가한다
+      },
+    ],
+  },
+}
+```
+
+### file-loader
+CSS 뿐만 아니라 소스코드에서 사용하는 모든 파일을 모듈로 사용하게끔 할 수 있다. 파일을 모듈 형태로 지원하고 웹팩 아웃풋에 파일을 옮겨주는 것이 file-loader가 하는 일이다. 가령 CSS에서 url() 함수에 이미지 파일 경로를 지정할 수 있는데 웹팩은 file-loader를 이용해서 이 파일을 처리한다.
+
+
+```bash
+$ yarn add -D file-loader
+```
+
+### url-loader
+사용하는 이미지 갯수가 많다면 네트웍 리소스를 사용하는 부담이 있고 사이트 성능에 영향을 줄 수도 있다. 만약 한 페이지에서 작은 이미지를 여러 개 사용한다면 Data URI Scheme을 이용하는 방법이 더 나은 경우도 있다. 이미지를 Base64로 인코딩하여 문자열 형태로 소스코드에 넣는 형식이다.
+
+url-loader는 이러한 처리를 자동화해준다.
+
+```bash
+$ yarn add -D url-loader
+```
+
+
+## Plugin
+웹팩에서 알아야 할 마지막 기본 개념이 플러그인. 로더가 파일 단위로 처리하는 반면 플러그인은 번들된 결과물을 처리. 번들된 자바스크립트를 난독화 한다거나 특정 텍스트를 추출하는 용도로 사용
+
+
+### 6.1 BannerPlugin
+결과물에 빌드 정보나 커밋 버전같은 걸 추가할 수 있다.
+
+webpack.config.js
+
+```js
+const webpack = require('webpack');
+
+module.exports = {
+  plugins: [
+    new webpack.BannerPlugin({
+      banner: '이것은 배너 입니다',
     })
-  ])
-}
+  ]
 ```
 
+### 6.1 DefinePlugin
+어플리케이션은 개발환경과 운영환경으로 나눠서 운영한다. 가령 환경에 따라 API 서버 주소가 다를 수 있다. 같은 소스 코드를 두 환경에 배포하기 위해서는 이러한 환경 의존적인 정보를 소스가 아닌 곳에서 관리하는 것이 좋다. 배포할 때마다 코드를 수정하는 것은 곤란하기 때문이다.
+
+웹팩은 이러한 환경 정보를 제공하기 위해 DefinePlugin을 제공한다.
+
+webpack.config.js
+
+```js
+const webpack = require('webpack');
+
+module.exports = {
+  plugins: [
+    // 빈 객체를 전달해도 기본적으로 넣어주는 값이 있다. 노드 환경정보인 process.env.NODEENV 인데 웹팩 설정의 mode에 설정한 값이 여기에 들어간다. "development"를 설정했기 때문에 어플리케이션 코드에서 process.env.NODEENV 변수로 접근하면 "development" 값을 얻을 수 있다.
+    new webpack.DefinePlugin({
+      VERSION: JSON.stringify("v.1.2.3"),
+      PRODUCTION: JSON.stringify(false),
+      MAX_COUNT: JSON.stringify(999),
+      "api.domain": JSON.stringify("http://dev.api.domain.com"),
+    })
+  ]
+```
