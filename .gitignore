@@ -1,5 +1,8 @@
 desktop.ini
 
+# build file
+dist
+
 # Logs
 logs
 *.log
