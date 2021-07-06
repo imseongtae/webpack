@@ -3,6 +3,7 @@ const webpack = require('webpack');
 const banner = require("./src/banner");
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   mode: "development",
@@ -40,7 +41,11 @@ module.exports = {
       } : false,
       hash: true, // 정적 파일을 불러올때 쿼리문자열에 웹팩 해쉬값을 추가한다
     }),
-    new CleanWebpackPlugin()
+    new CleanWebpackPlugin(),
+    // 프로덕션 환경일 경우 플러그인 추가, filename에 설정한 값으로 CSS 파일이 생성됨
+    ...(process.env.NODE_ENV === "production"
+    ? [new MiniCssExtractPlugin({ filename: `[name].css` })]
+    : []),
   ],
   module: {
     rules: [
@@ -50,7 +55,13 @@ module.exports = {
       },
       {
         test: /\.css$/, // .css 확장자로 끝나는 모든 파일
-        use: ["style-loader", "css-loader"], // style-loader를 앞에 추가한다. 배열로 설정하면 뒤에서부터 앞의 순서로 로더가 동작
+        use: [
+          // style-loader를 앞에 추가한다. 배열로 설정하면 뒤에서부터 앞의 순서로 로더가 동작
+          process.env.NODE_ENV === "production"
+            ? MiniCssExtractPlugin.loader // 프로덕션 환경
+            : "style-loader", // 개발 환경
+          "css-loader"
+        ], 
       },
       {
         test: /\.png$/, // .png 확장자로 마치는 모든 파일
