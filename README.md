@@ -4,6 +4,7 @@
 1. [What is the Webpack?](#what-is-the-webpack?)
 1. [entry/output](#entry/output)
 1. [Loader](#loader)
+1. [Plugin](#plugin)
 
 
 
@@ -97,6 +98,9 @@ Entrypoint main = bundle.js # 제일 중요! 모듈의 해석 순서
     + 2 hidden modules
 ```
 
+**[⬆ back to top](#table-of-contents)**
+
+
 ## Loader
 
 ### 로더의 역할
@@ -109,6 +113,8 @@ Entrypoint main = bundle.js # 제일 중요! 모듈의 해석 순서
 // js파일에서 css파일을 임포트하기 위해선 로더가 필요하고, dist파일의 결과물에 반영할 수 있음
 exports.push([module.i, "p {\r\n  color: blue;\r\n}", ""]);
 ```
+
+**[⬆ back to top](#table-of-contents)**
 
 ## 자주 사용하는 로더
 
@@ -183,6 +189,8 @@ url-loader는 이러한 처리를 자동화해준다.
 ```bash
 $ yarn add -D url-loader
 ```
+
+**[⬆ back to top](#table-of-contents)**
 
 
 ## Plugin
@@ -280,6 +288,56 @@ module.exports = {
 }
 ```
 
+### 4. MiniCssExtractPlugin
+스타일시트가 점점 많아지면 하나의 자바스크립트 결과물로 만드는 것이 부담일 수 있다. 번들 결과에서 스트일시트 코드만 뽑아서 별도의 CSS 파일로 만들어 역할에 따라 파일을 분리하는 것이 좋다. 브라우져에서 큰 파일 하나를 내려받는 것 보다, 여러 개의 작은 파일을 동시에 다운로드하는 것이 더 빠르다.
+
+
+개발 환경에서는 CSS를 하나의 모듈로 처리해도 상관없지만 프로덕션 환경에서는 분리하는 것이 효과적이다. MiniCssExtractPlugin은 CSS를 별로 파일로 뽑아내는 플러그인이다.
+
+```
+$ yarn add -D mini-css-extract-plugin
+```
+
+웹팩 설정을 추가
+
+```js
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
+module.exports = {
+  plugins: [
+    ...(process.env.NODE_ENV === "production"
+      ? [new MiniCssExtractPlugin({ filename: `[name].css` })]
+      : []),
+  ],
+}
+```
+프로덕션 환경일 경우만 이 플러그인을 추가했다. filename에 설정한 값으로 아웃풋 경로에 CSS 파일이 생성될 것이다.
+
+개발 환경에서는 css-loader에의해 자바스크립트 모듈로 변경된 스타일시트를 적용하기위해 style-loader를 사용했다. 반면 프로덕션 환경에서는 별도의 CSS 파일으로 추출하는 플러그인을 적용했으므로 다른 로더가 필요하다.
+
+```js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          process.env.NODE_ENV === "production"
+            ? MiniCssExtractPlugin.loader // 프로덕션 환경
+            : "style-loader", // 개발 환경
+          "css-loader",
+        ],
+      },
+    ],
+  },
+}
+```
+
+플러그인에서 제공하는 MiniCssExtractPlugin.loader 로더를 추가한다.  
+`NODE_ENV=production yarn build`로 결과를 확인하면
+dist/main.css가 생성되었고 index.html에 이 파일을 로딩하는 코드가 추가된다.
+
+**[⬆ back to top](#table-of-contents)**
 
 
 ### Development Server
@@ -300,6 +358,8 @@ $ yarn add -D webpack-dev-server
   "dev": "webpack serve"
 },
 ```
+
+**[⬆ back to top](#table-of-contents)**
 
 
 ## 참조
